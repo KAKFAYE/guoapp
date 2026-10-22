@@ -334,14 +334,16 @@ class _RankingsScreenState extends State<RankingsScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.all(12),
                                 child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     SizedBox(
-                                      width: 36,
+                                      width: 44,
                                       child: Text(
                                         '${item.rank}',
                                         style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w800,
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.w900,
+                                          fontStyle: FontStyle.italic,
                                           color: item.rank <= 3
                                               ? Theme.of(
                                                   context,
@@ -353,8 +355,8 @@ class _RankingsScreenState extends State<RankingsScreen> {
                                       ),
                                     ),
                                     SizedBox(
-                                      width: 72,
-                                      height: 108,
+                                      width: 92,
+                                      height: 124,
                                       child: DramaCover(
                                         drama: item.drama,
                                         repository: widget.repository,
@@ -369,36 +371,84 @@ class _RankingsScreenState extends State<RankingsScreen> {
                                         children: [
                                           Text(
                                             item.drama.title,
-                                            maxLines: 2,
+                                            maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Row(
+                                            children: [
+                                              if (item.drama.heat.isNotEmpty)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        right: 10,
+                                                      ),
+                                                  child: Text(
+                                                    item.drama.heat,
+                                                    style: TextStyle(
+                                                      fontSize: 12,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .tertiary,
+                                                    ),
+                                                  ),
+                                                ),
+                                              if (item.metric.isNotEmpty)
+                                                Text(
+                                                  item.metric,
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: Theme.of(context)
+                                                        .colorScheme
+                                                        .primary,
+                                                  ),
+                                                ),
+                                            ],
                                           ),
                                           if (item.drama.category.isNotEmpty)
-                                            Text(
-                                              item.drama.category,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          if (item.metric.isNotEmpty)
                                             Padding(
                                               padding: const EdgeInsets.only(
-                                                top: 8,
+                                                top: 4,
                                               ),
                                               child: Text(
-                                                item.metric,
+                                                item.drama.category,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
                                                 style: TextStyle(
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
+                                                  fontSize: 12,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                              ),
+                                            ),
+                                          if (item.drama.description.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 6,
+                                              ),
+                                              child: Text(
+                                                item.drama.description,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  height: 1.4,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
                                                 ),
                                               ),
                                             ),
                                         ],
                                       ),
                                     ),
-                                    const Icon(Icons.chevron_right_rounded),
                                   ],
                                 ),
                               ),

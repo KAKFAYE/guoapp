@@ -102,6 +102,90 @@ class _SavedLibraryState extends State<SavedLibrary> {
     );
   }
 
+  Widget _historyRow(Drama drama, WatchEntry? entry) {
+    final episode = entry?.episode ?? 0;
+    final total = drama.episodes;
+    final progress = (entry == null || entry.duration <= 0)
+        ? null
+        : (entry.position / entry.duration).clamp(0.0, 1.0);
+    final updated = entry == null
+        ? ''
+        : _relativeTime(entry.updatedAt);
+    return Card(
+      key: ValueKey('history-${drama.id}'),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => widget.onOpen(drama),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 64,
+                height: 88,
+                child: DramaCover(
+                  drama: drama,
+                  repository: widget.repository,
+                  radius: 8,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      drama.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      [
+                        total > 0 ? '看至第$episode集/共$total集' : '看至第$episode集',
+                        if (entry != null) formatPosition(entry.position),
+                        if (updated.isNotEmpty) updated,
+                      ].join('  '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 4,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              FilledButton.tonal(
+                key: ValueKey('history-resume-${drama.id}'),
+                onPressed: () => widget.onContinue(drama),
+                child: const Text('继续播放'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _relativeTime(DateTime time) {
+    final difference = DateTime.now().difference(time);
+    if (difference.inMinutes < 1) return '刚刚';
+    if (difference.inMinutes < 60) return '${difference.inMinutes}分钟前';
+    if (difference.inHours < 24) return '${difference.inHours}小时前';
+    if (difference.inDays < 30) return '${difference.inDays}天前';
+    return '${time.year}-${time.month}-${time.day}';
+  }
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.store,
@@ -276,6 +360,20 @@ class _SavedLibraryState extends State<SavedLibrary> {
               SliverToBoxAdapter(child: Column(children: header)),
               if (items.isEmpty)
                 SliverFillRemaining(hasScrollBody: false, child: empty)
+              else if (widget.history)
+                // 红果风格历史列表：封面 + 标题 + 进度 + 继续播放按钮。
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(padding, 0, padding, 20),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final drama = items[index];
+                      final entry = history
+                          .where((entry) => entry.drama.id == drama.id)
+                          .firstOrNull;
+                      return _historyRow(drama, entry);
+                    }, childCount: items.length),
+                  ),
+                )
               else
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(padding, 0, padding, 20),

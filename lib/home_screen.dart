@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _categorySelections = <String, String>{};
   late final CatalogBrowser _browser;
   bool _searchVisible = false;
+  bool _filtersExpanded = false;
   bool _categoriesLoading = false;
   String? _categoriesError;
   int _categoryGeneration = 0;
@@ -1356,6 +1357,92 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  /// 找剧筛选标签墙（红果短剧电脑版风格）。
+  Widget _filterWall() {
+    final view = widget.store.catalogView;
+    Widget section(String title, List<Widget> chips) => Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 8, children: chips),
+        ],
+      ),
+    );
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+      padding: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          section(
+            '推荐',
+            [
+              for (final sort in CatalogSort.values)
+                ChoiceChip(
+                  label: Text(sort.label),
+                  selected: view.sort == sort,
+                  onSelected: (_) => saveUserChange(
+                    context,
+                    () => widget.store.setCatalogView(
+                      view.copyWith(sort: sort),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          section(
+            '剧集状态',
+            [
+              for (final entry in const {
+                '': '全部',
+                'ongoing': '连载中',
+                'finished': '已完结',
+                'unknown': '状态未知',
+              }.entries)
+                ChoiceChip(
+                  label: Text(entry.value),
+                  selected: view.release == entry.key,
+                  onSelected: (_) => saveUserChange(
+                    context,
+                    () => widget.store.setCatalogView(
+                      view.copyWith(release: entry.key),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          section(
+            '题材',
+            [
+              for (final category in _displayCategories)
+                ChoiceChip(
+                  label: Text(category.name),
+                  selected: _displayCategory == category.id,
+                  onSelected: (_) {
+                    _changeCategory(category.id);
+                    if (_showRecommendations) {
+                      setState(() => _filtersExpanded = false);
+                    }
+                  },
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _catalog({required bool selectionInBody}) {
     final items = _reveal(_visible);
     final television = AppLayout.isTelevision(context);
@@ -1424,6 +1511,17 @@ class _HomeScreenState extends State<HomeScreen> {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (!_showRecommendations)
+                IconButton(
+                  key: const ValueKey('toggle-filter-wall'),
+                  tooltip: _filtersExpanded ? '收起找剧筛选' : '找剧筛选',
+                  onPressed: () =>
+                      setState(() => _filtersExpanded = !_filtersExpanded),
+                  color: _filtersExpanded
+                      ? Theme.of(context).colorScheme.primary
+                      : null,
+                  icon: const Icon(Icons.tune_rounded),
+                ),
               if (_supportsVipFilter)
                 IconButton(
                   tooltip: widget.store.hideVip ? 'VIP：隐藏' : 'VIP：显示',
@@ -1436,6 +1534,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
+        if (_filtersExpanded) _filterWall(),
         if (_showRecommendations)
           Expanded(
             child: GestureDetector(
