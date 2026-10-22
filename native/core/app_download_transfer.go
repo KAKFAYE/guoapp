@@ -45,7 +45,7 @@ func (manager *nativeDownloads) transferMedia(ctx context.Context, job nativeDow
 		return nativeDownloadResult{}, errors.New("下载地址无效")
 	}
 	hls := media.Playlist != "" || strings.HasSuffix(strings.ToLower(parsed.Path), ".m3u8")
-	entry := "media.mp4"
+	entry := downloadEpisodeFile(job.Index)
 	if hls {
 		bundle, err = manager.downloadBundle(ctx, media, job.Quality)
 		if err != nil {

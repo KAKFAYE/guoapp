@@ -321,7 +321,10 @@ extension MediaMergeOperations on MediaLibrary {
     final checked = await executor.probe(output);
     verifyMediaDuration(checked, duration);
     await _decodeOutput(output, checked.duration);
-    final relative = path.join('library', id, 'full.mkv');
+    final safeTitle =
+        jobs.first.drama.title.replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1f]'), ' ').trim();
+    final titleFolder = safeTitle.isEmpty ? '未命名' : safeTitle;
+    final relative = path.join('library', titleFolder, '$titleFolder-合并-$id.mkv');
     final target = File(path.join(root!, relative));
     await target.parent.create(recursive: true);
     _check();
