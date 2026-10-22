@@ -623,16 +623,27 @@ class MediaLibrary extends ChangeNotifier {
         await merge(contiguous);
         await store.setAutoMergeDrama(dramaId, false);
         // 删除该剧的单集导出文件与下载工作数据，只保留合并成品。
+        final showFolders = <String>{};
         for (final item in _items
             .where((item) => !item.merged && item.drama.id == dramaId)
             .toList()) {
           final file = File(fileFor(item));
+          showFolders.add(file.parent.path);
           if (await file.exists()) await file.delete();
           final metadata = File(path.setExtension(file.path, '.nfo'));
           if (await metadata.exists()) await metadata.delete();
           _items.remove(item);
         }
         await _save();
+        // 连同剧名文件夹一起清理。
+        for (final folderPath in showFolders) {
+          final directory = Directory(folderPath);
+          if (await directory.exists()) {
+            try {
+              await directory.delete(recursive: true);
+            } catch (_) {}
+          }
+        }
         for (final job in allJobs) {
           try {
             await repository.controlDownloads('remove', id: job.id);
