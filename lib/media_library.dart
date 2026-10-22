@@ -644,6 +644,25 @@ class MediaLibrary extends ChangeNotifier {
             } catch (_) {}
           }
         }
+        // 扫描下载目录下所有来源文件夹（exports、hongguo 等），
+        // 把剧名对应的下载工作文件夹（含单集分块）整个删除。
+        try {
+            final safeTitle = allJobs
+                .first.drama.title
+              .replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1f]'), ' ')
+              .trim();
+          if (safeTitle.isNotEmpty && root != null) {
+            await for (final source in Directory(root!).list()) {
+              if (source is! Directory) continue;
+              final show = Directory(path.join(source.path, safeTitle));
+              if (show.path != source.path && await show.exists()) {
+                try {
+                  await show.delete(recursive: true);
+                } catch (_) {}
+              }
+            }
+          }
+        } catch (_) {}
         for (final job in allJobs) {
           try {
             await repository.controlDownloads('remove', id: job.id);
