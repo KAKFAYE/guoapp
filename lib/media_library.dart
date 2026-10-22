@@ -457,12 +457,7 @@ class MediaLibrary extends ChangeNotifier {
       '${job.revision > 0 ? '-${job.revision}' : ''}';
 
   Future<void> _exportMetadata(DownloadJob job, File target) async {
-    await _writeShowMetadata(job.drama, target.parent);
-    _check();
-    await _writeText(
-      File(path.setExtension(target.path, '.nfo')),
-      embyEpisodeNfo(job),
-    );
+    // 不再生成 .nfo / tvshow.nfo 元数据文件（仅 Emby 等媒体服务器需要）。
   }
 
   Future<void> exportJobs(

@@ -150,11 +150,6 @@ extension MediaExportOperations on MediaLibrary {
         decodeVerified: true,
         specialNumber: number,
       );
-      await _writeShowMetadata(drama, target.parent.parent);
-      await _writeText(
-        File(path.setExtension(target.path, '.nfo')),
-        embySpecialNfo(item, number),
-      );
       final previous = List<LocalMediaItem>.of(_items);
       _items.removeWhere((entry) => entry.id == item.id);
       _items.add(item);
