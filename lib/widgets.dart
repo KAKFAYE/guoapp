@@ -395,6 +395,7 @@ class DramaTile extends StatelessWidget {
     this.selected,
     this.onMore,
     this.onLongPress,
+    this.onQuickDownload,
   });
   final Drama drama;
   final AppRepository repository;
@@ -407,6 +408,7 @@ class DramaTile extends StatelessWidget {
   final bool? selected;
   final VoidCallback? onMore;
   final VoidCallback? onLongPress;
+  final VoidCallback? onQuickDownload;
 
   static double titleHeight(BuildContext context) =>
       MediaQuery.textScalerOf(
@@ -465,8 +467,21 @@ class DramaTile extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (onQuickDownload != null && selected == null)
+                Positioned(
+                  top: 2,
+                  right: 2,
+                  child: CoverDownloadButton(
+                    drama: drama,
+                    onPressed: onQuickDownload!,
+                  ),
+                ),
               if (actions != null && selected == null)
-                Positioned(top: 2, right: 2, child: actions!),
+                Positioned(
+                  top: 2,
+                  right: onQuickDownload != null ? 46 : 2,
+                  child: actions!,
+                ),
               if (selected != null)
                 Positioned(
                   top: 6,
@@ -553,6 +568,31 @@ class DramaTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class CoverDownloadButton extends StatelessWidget {
+  const CoverDownloadButton({
+    super.key,
+    required this.drama,
+    required this.onPressed,
+  });
+  final Drama drama;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => IconButton.filledTonal(
+    key: ValueKey('cover-download-${drama.id}'),
+    tooltip: '${drama.title} · 快捷下载',
+    onPressed: onPressed,
+    icon: const Icon(Icons.download_rounded, size: 20),
+    style: IconButton.styleFrom(
+      backgroundColor: Colors.black.withValues(alpha: .64),
+      foregroundColor: Colors.white,
+      minimumSize: const Size(40, 40),
+      padding: const EdgeInsets.all(8),
+      visualDensity: VisualDensity.compact,
+    ),
+  );
 }
 
 class StatusPanel extends StatelessWidget {

@@ -745,6 +745,111 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _quickDownload(Drama drama) async {
+    if (!widget.store.canDownload || !widget.repository.supportsDownloads) {
+      return;
+    }
+    if (!widget.store.allowsSource(drama.source)) return;
+    _pauseCatalog();
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: Text(drama.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'picker'),
+            child: const Row(
+              children: [
+                Icon(Icons.playlist_add_check_rounded, size: 22),
+                SizedBox(width: 14),
+                Expanded(child: Text('下载选集…')),
+              ],
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'all'),
+            child: const Row(
+              children: [
+                Icon(Icons.download_rounded, size: 22),
+                SizedBox(width: 14),
+                Expanded(child: Text('下载全部')),
+              ],
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'select'),
+            child: const Row(
+              children: [
+                Icon(Icons.checklist_rounded, size: 22),
+                SizedBox(width: 14),
+                Expanded(child: Text('多选下载')),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (choice == null || !mounted) return;
+    switch (choice) {
+      case 'picker':
+        _openDrama(drama, download: true);
+      case 'select':
+        _selectDrama(drama);
+      case 'all':
+        await _downloadAll(drama);
+    }
+  }
+
+  Future<void> _downloadAll(Drama drama) async {
+    try {
+      final detail = await widget.repository.detail(drama);
+      if (!mounted || !widget.store.canDownload) return;
+      final preferences = widget.store.downloadPreferences;
+      final episodes = detail.episodes
+          .where((episode) => preferences.includeVip || !episode.vip)
+          .take(500)
+          .toList();
+      if (episodes.isEmpty) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('没有可下载的分集')));
+        return;
+      }
+      final added = await widget.repository.enqueueDownloads(
+        detail,
+        episodes,
+        quality: preferences.quality,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            added == 0 ? '所选集数已在下载列表中' : '已加入 $added 集，已有任务自动跳过',
+          ),
+          action: SnackBarAction(
+            label: '查看',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => DownloadsScreen(
+                    repository: widget.repository,
+                    store: widget.store,
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.toString())));
+      }
+    }
+  }
+
   void _dramaActions(Drama drama) => showDramaActions(
     context,
     drama: drama,
@@ -775,6 +880,7 @@ class _HomeScreenState extends State<HomeScreen> {
       onTap: () => _selectionMode ? _selectDrama(drama) : _openDrama(drama),
       onLongPress: canSelect ? () => _selectDrama(drama) : null,
       onMore: () => _dramaActions(drama),
+      onQuickDownload: canSelect ? () => _quickDownload(drama) : null,
       actions: DramaActionButton(
         drama: drama,
         onPressed: () => _dramaActions(drama),
