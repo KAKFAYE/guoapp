@@ -777,6 +777,16 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'mergeall'),
+            child: const Row(
+              children: [
+                Icon(Icons.merge_rounded, size: 22),
+                SizedBox(width: 14),
+                Expanded(child: Text('一键合并下载 · 剧名.mp4')),
+              ],
+            ),
+          ),
+          SimpleDialogOption(
             onPressed: () => Navigator.pop(context, 'select'),
             child: const Row(
               children: [
@@ -797,6 +807,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectDrama(drama);
       case 'all':
         await _downloadAll(drama);
+      case 'mergeall':
+        await _downloadAll(drama);
+        if (!mounted) return;
+        await widget.store.setAutoMergeDrama(drama.id, true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '已排队自动合并：${drama.title} 全部下载完成后将自动合并为「${drama.title}.mkv」',
+            ),
+          ),
+        );
     }
   }
 

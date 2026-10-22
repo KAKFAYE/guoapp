@@ -504,6 +504,28 @@ class LocalStore extends ChangeNotifier {
       _setting('exportPosters', value, admin: true);
   Future<void> setAutoExport(bool value) =>
       _setting('autoExport', value, admin: true);
+
+  /// 一键合并下载：等待自动合并整剧的剧 ID 列表（JSON 数组字符串）。
+  Set<String> get autoMergeDramas {
+    if (locked) return const {};
+    try {
+      final raw = jsonDecode(_string(_key('autoMerge')) ?? '[]') as List;
+      return raw.whereType<String>().toSet();
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  Future<void> setAutoMergeDrama(String dramaId, bool enabled) {
+    final ids = autoMergeDramas.toSet();
+    if (enabled) {
+      ids.add(dramaId);
+    } else {
+      ids.remove(dramaId);
+    }
+    return _setting(_key('autoMerge'), jsonEncode(ids.toList()));
+  }
+
   Future<void> setForceLogin(bool value) =>
       _setting('forceLogin', value, admin: true);
   Future<void> setHideVip(bool value) => _setting(_key('hideVip'), value);

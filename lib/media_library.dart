@@ -199,7 +199,10 @@ class MediaLibrary extends ChangeNotifier {
       library._automatic = automatic;
       library._timer = Timer.periodic(
         const Duration(seconds: 8),
-        (_) => unawaited(automatic.maybeExport()),
+        (_) => unawaited(() async {
+          await automatic.maybeExport();
+          await automatic.maybeAutoMerge();
+        }()),
       );
     }
   }
@@ -544,9 +547,13 @@ class MediaLibrary extends ChangeNotifier {
       final jobs = await repository.downloads();
       if (!jobs.any((job) => job.completed)) return;
       await reload();
+      final mergeIds = store.autoMergeDramas;
       final pending = <DownloadJob>[];
       for (final job in jobs.where(
-        (job) => job.completed && !_skipped.contains(job.id),
+        (job) =>
+            job.completed &&
+            !_skipped.contains(job.id) &&
+            !mergeIds.contains(job.drama.id),
       )) {
         final item = _items
             .where((item) => item.id == 'export-${job.id}')
@@ -561,6 +568,64 @@ class MediaLibrary extends ChangeNotifier {
     } catch (failure) {
       _retryAfter = DateTime.now().add(const Duration(minutes: 2));
       error = failure.toString();
+    } finally {
+      _checking = false;
+    }
+  }
+
+  /// 一键合并下载：剧的全部分集下载完成后自动合并为一个视频文件（剧名.mp4）。
+  Future<void> maybeAutoMerge() async {
+    if (_checking || busy || suspended || DateTime.now().isBefore(_retryAfter)) {
+      return;
+    }
+    if (store.autoMergeDramas.isEmpty) return;
+    _checking = true;
+    try {
+      if (automaticWorker) await store.reload();
+      final wishlist = store.autoMergeDramas;
+      if (wishlist.isEmpty) return;
+      final jobs = await repository.downloads();
+      for (final dramaId in wishlist) {
+        final dramaJobs =
+            jobs
+                .where((job) => job.drama.id == dramaId && job.completed)
+                .toList()
+              ..sort((a, b) => a.episode.number.compareTo(b.episode.number));
+        if (dramaJobs.isEmpty) continue;
+        final drama = dramaJobs.first.drama;
+        final target = drama.episodes > 0
+            ? drama.episodes
+            : dramaJobs.last.episode.number;
+        final numbers = dramaJobs.map((job) => job.episode.number).toSet();
+        final complete = [
+          for (var number = 1; number <= target; number++) number,
+        ].every(numbers.contains);
+        if (!complete) continue;
+        if (_items.any((item) => item.merged && item.drama.id == dramaId)) {
+          await store.setAutoMergeDrama(dramaId, false);
+          continue;
+        }
+        await merge(dramaJobs);
+        await store.setAutoMergeDrama(dramaId, false);
+        // 删除该剧的单集导出文件与下载工作数据，只保留合并成品。
+        for (final item in _items
+            .where((item) => !item.merged && item.drama.id == dramaId)
+            .toList()) {
+          final file = File(fileFor(item));
+          if (await file.exists()) await file.delete();
+          final metadata = File(path.setExtension(file.path, '.nfo'));
+          if (await metadata.exists()) await metadata.delete();
+          _items.remove(item);
+        }
+        await _save();
+        for (final job in dramaJobs) {
+          try {
+            await repository.controlDownloads('remove', id: job.id);
+          } catch (_) {}
+        }
+      }
+    } catch (_) {
+      _retryAfter = DateTime.now().add(const Duration(minutes: 2));
     } finally {
       _checking = false;
     }
