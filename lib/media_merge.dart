@@ -325,10 +325,10 @@ extension MediaMergeOperations on MediaLibrary {
         jobs.first.drama.title.replaceAll(RegExp(r'[<>:"/\\|?*\x00-\x1f]'), ' ').trim();
     final titleFolder = safeTitle.isEmpty ? '未命名' : safeTitle;
     var fileName = '$titleFolder.mkv';
-    if (await File(path.join(root!, 'library', titleFolder, fileName)).exists()) {
+    if (await File(path.join(root!, 'library', fileName)).exists()) {
       fileName = '$titleFolder-合并-${id.substring(id.length - 6)}.mkv';
     }
-    final relative = path.join('library', titleFolder, fileName);
+    final relative = path.join('library', fileName);
     final target = File(path.join(root!, relative));
     await target.parent.create(recursive: true);
     _check();
