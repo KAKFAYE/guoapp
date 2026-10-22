@@ -216,6 +216,8 @@ class MediaLibrary extends ChangeNotifier {
           .toList()
         ..sort((a, b) => b.created.compareTo(a.created));
   String fileFor(LocalMediaItem item) {
+    // 合并成品可能被移动到安装目录，此时记录的是绝对路径。
+    if (path.isAbsolute(item.file)) return item.file;
     if (root == null) throw AppFailure('媒体目录尚未就绪');
     final file = path.join(root!, item.file);
     if (!path.isWithin(root!, file)) throw AppFailure('媒体路径无效');

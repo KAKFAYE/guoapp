@@ -353,7 +353,8 @@ extension MediaMergeOperations on MediaLibrary {
     final item = LocalMediaItem(
       id: id,
       drama: jobs.first.drama,
-      file: relative,
+      // 成品在安装目录时用绝对路径，否则用媒体库相对路径。
+      file: installPath.isNotEmpty ? installPath : relative,
       kind: 'merged',
       episodes: jobs.map((job) => job.episode.number).toList(),
       duration: checked.duration,
@@ -367,17 +368,15 @@ extension MediaMergeOperations on MediaLibrary {
       decodeVerified: true,
       sourceVersion: fingerprint,
     );
-    if (installPath.isEmpty) {
-      final previous = List<LocalMediaItem>.of(_items);
-      _items.removeWhere((item) => item.id == id);
-      _items.add(item);
-      try {
-        _check();
-        await _save();
-      } catch (_) {
-        _items = previous;
-        rethrow;
-      }
+    final previous = List<LocalMediaItem>.of(_items);
+    _items.removeWhere((item) => item.id == id);
+    _items.add(item);
+    try {
+      _check();
+      await _save();
+    } catch (_) {
+      _items = previous;
+      rethrow;
     }
     return item;
   }
