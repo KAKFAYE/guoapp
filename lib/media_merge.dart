@@ -377,6 +377,7 @@ extension MediaMergeOperations on MediaLibrary {
       } catch (_) {
         _items = previous;
         rethrow;
+      }
     }
     return item;
   }
