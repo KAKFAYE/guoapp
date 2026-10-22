@@ -586,26 +586,41 @@ class MediaLibrary extends ChangeNotifier {
       if (wishlist.isEmpty) return;
       final jobs = await repository.downloads();
       for (final dramaId in wishlist) {
+        final allJobs = jobs.where((job) => job.drama.id == dramaId).toList();
+        if (allJobs.isEmpty) continue;
+        // 还有排队/下载中/暂停的任务时继续等待。
+        final working = allJobs.any(
+          (job) =>
+              job.state == 'queued' ||
+              job.state == 'downloading' ||
+              job.state == 'paused',
+        );
+        if (working) continue;
         final dramaJobs =
-            jobs
-                .where((job) => job.drama.id == dramaId && job.completed)
-                .toList()
+            allJobs.where((job) => job.completed).toList()
               ..sort((a, b) => a.episode.number.compareTo(b.episode.number));
-        if (dramaJobs.isEmpty) continue;
-        final drama = dramaJobs.first.drama;
-        final target = drama.episodes > 0
-            ? drama.episodes
-            : dramaJobs.last.episode.number;
-        final numbers = dramaJobs.map((job) => job.episode.number).toSet();
-        final complete = [
-          for (var number = 1; number <= target; number++) number,
-        ].every(numbers.contains);
-        if (!complete) continue;
+        if (dramaJobs.length < 2) {
+          // 没有任何可合并的内容（全部失败/只有一集），放弃排队避免永远等待。
+          await store.setAutoMergeDrama(dramaId, false);
+          continue;
+        }
+        // 取从第 1 集开始最长连续完成的区间，缺集不阻塞合并。
+        var last = dramaJobs.first.episode.number;
+        final contiguous = <DownloadJob>[dramaJobs.first];
+        for (final job in dramaJobs.skip(1)) {
+          if (job.episode.number != last + 1) break;
+          contiguous.add(job);
+          last = job.episode.number;
+        }
+        if (contiguous.length < 2) {
+          await store.setAutoMergeDrama(dramaId, false);
+          continue;
+        }
         if (_items.any((item) => item.merged && item.drama.id == dramaId)) {
           await store.setAutoMergeDrama(dramaId, false);
           continue;
         }
-        await merge(dramaJobs);
+        await merge(contiguous);
         await store.setAutoMergeDrama(dramaId, false);
         // 删除该剧的单集导出文件与下载工作数据，只保留合并成品。
         for (final item in _items
@@ -618,7 +633,7 @@ class MediaLibrary extends ChangeNotifier {
           _items.remove(item);
         }
         await _save();
-        for (final job in dramaJobs) {
+        for (final job in allJobs) {
           try {
             await repository.controlDownloads('remove', id: job.id);
           } catch (_) {}
