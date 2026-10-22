@@ -26,10 +26,13 @@ extension MediaExportOperations on MediaLibrary {
         .convert(utf8.encode(drama.id))
         .toString()
         .substring(0, 12);
-    final folder = path.join(
-      'exports',
-      '${_safeName(drama.title)} [${drama.source}-$hash]',
-    );
+    var folder = path.join('exports', _safeName(drama.title));
+    if (_showFolders.values.contains(folder)) {
+      folder = path.join(
+        'exports',
+        '${_safeName(drama.title)} [${drama.source}-$hash]',
+      );
+    }
     if (_showFolders.values.contains(folder)) {
       throw AppFailure('导出目录与另一部剧冲突，请检查本地媒体记录');
     }

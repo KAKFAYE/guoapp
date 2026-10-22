@@ -439,6 +439,8 @@ class MediaLibrary extends ChangeNotifier {
       '-1',
       '-avoid_negative_ts',
       'make_zero',
+      '-movflags',
+      '+faststart',
       destination,
     ]);
     _check();
@@ -455,7 +457,7 @@ class MediaLibrary extends ChangeNotifier {
       '${job.revision > 0 ? '-${job.revision}' : ''}';
 
   Future<void> _exportMetadata(DownloadJob job, File target) async {
-    await _writeShowMetadata(job.drama, target.parent.parent);
+    await _writeShowMetadata(job.drama, target.parent);
     _check();
     await _writeText(
       File(path.setExtension(target.path, '.nfo')),
@@ -485,7 +487,7 @@ class MediaLibrary extends ChangeNotifier {
           notifyListeners();
           continue;
         }
-        final intermediate = path.join(temporary.path, 'export-$i.mkv');
+        final intermediate = path.join(temporary.path, 'export-$i.mp4');
         final probe = await _prepare(
           job,
           intermediate,
@@ -498,8 +500,7 @@ class MediaLibrary extends ChangeNotifier {
         final show = await _showDirectory(job.drama);
         final relative = path.join(
           show,
-          'Season 01',
-          'S01E${job.episode.number.toString().padLeft(3, '0')}.mkv',
+          '第${job.episode.number.toString().padLeft(3, '0')}集.mp4',
         );
         final target = File(path.join(root!, relative));
         await target.parent.create(recursive: true);

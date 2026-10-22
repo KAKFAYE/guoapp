@@ -347,7 +347,7 @@ class LocalStore extends ChangeNotifier {
     return {'light', 'dark', 'system'}.contains(value) ? value! : 'system';
   }
 
-  bool get autoExport => !locked && (_bool('autoExport') ?? false);
+  bool get autoExport => !locked && (_bool('autoExport') ?? true);
   bool get exportPosters => !locked && (_bool('exportPosters') ?? false);
   String get source {
     if (locked) return '';
