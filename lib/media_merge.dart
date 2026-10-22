@@ -333,35 +333,14 @@ extension MediaMergeOperations on MediaLibrary {
     await target.parent.create(recursive: true);
     _check();
     await File(output).rename(target.path);
-    // 优先把成品放进安装目录（exe 所在文件夹）；失败则保留在媒体库目录。
-    var installPath = '';
-    try {
-      final installDir = path.dirname(Platform.resolvedExecutable);
-      final installFile = File(path.join(installDir, fileName));
-      if (!path.equals(installFile.path, target.path)) {
-        if (await installFile.exists()) await installFile.delete();
-        try {
-          await target.rename(installFile.path);
-        } catch (_) {
-          // 跨盘符时 rename 失败，改用复制后删除。
-          await target.copy(installFile.path);
-          await target.delete();
-        }
-        installPath = installFile.path;
-      }
-    } catch (_) {}
     final item = LocalMediaItem(
       id: id,
       drama: jobs.first.drama,
-      // 成品在安装目录时用绝对路径，否则用媒体库相对路径。
-      file: installPath.isNotEmpty ? installPath : relative,
+      file: relative,
       kind: 'merged',
       episodes: jobs.map((job) => job.episode.number).toList(),
       duration: checked.duration,
-      bytes: await (installPath.isNotEmpty
-              ? File(installPath)
-              : target)
-          .length(),
+      bytes: await target.length(),
       created: DateTime.now(),
       videoTranscodes: plan.videoTranscodes,
       audioTranscodes: plan.audioTranscodes,
