@@ -59,7 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _categorySelections = <String, String>{};
   late final CatalogBrowser _browser;
   bool _searchVisible = false;
-  bool _filtersExpanded = false;
+  bool _filtersExpanded = true;
   bool _categoriesLoading = false;
   String? _categoriesError;
   int _categoryGeneration = 0;
@@ -1501,17 +1501,57 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
-        CatalogFilters(
-          key: ValueKey('filters-${_group.id}'),
-          categories: _displayCategories,
-          category: _displayCategory,
-          error: _categoriesError,
-          onCategory: _changeCategory,
-          onRetry: () => _loadCategories(force: true),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!_showRecommendations)
+        if (!television && _filtersExpanded) ...[
+          // 找剧式布局：筛选墙展开时隐藏重复的分类标签行，仅保留操作按钮。
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(0, 0, 8, 0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (_categoriesError != null)
+                    IconButton(
+                      tooltip: _categoriesError!,
+                      onPressed: () => _loadCategories(force: true),
+                      icon: Icon(
+                        Icons.refresh_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  if (_supportsVipFilter)
+                    IconButton(
+                      tooltip: widget.store.hideVip ? 'VIP：隐藏' : 'VIP：显示',
+                      onPressed: () => saveUserChange(
+                        context,
+                        () => widget.store.setHideVip(!widget.store.hideVip),
+                      ),
+                      icon: VipIcon(hidden: widget.store.hideVip),
+                    ),
+                  IconButton(
+                    key: const ValueKey('toggle-filter-wall'),
+                    tooltip: '收起找剧筛选',
+                    onPressed: () =>
+                        setState(() => _filtersExpanded = !_filtersExpanded),
+                    color: Theme.of(context).colorScheme.primary,
+                    icon: const Icon(Icons.tune_rounded),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          _filterWall(),
+        ] else
+          CatalogFilters(
+            key: ValueKey('filters-${_group.id}'),
+            categories: _displayCategories,
+            category: _displayCategory,
+            error: _categoriesError,
+            onCategory: _changeCategory,
+            onRetry: () => _loadCategories(force: true),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                 IconButton(
                   key: const ValueKey('toggle-filter-wall'),
                   tooltip: _filtersExpanded ? '收起找剧筛选' : '找剧筛选',
@@ -1522,19 +1562,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       : null,
                   icon: const Icon(Icons.tune_rounded),
                 ),
-              if (_supportsVipFilter)
-                IconButton(
-                  tooltip: widget.store.hideVip ? 'VIP：隐藏' : 'VIP：显示',
-                  onPressed: () => saveUserChange(
-                    context,
-                    () => widget.store.setHideVip(!widget.store.hideVip),
+                if (_supportsVipFilter)
+                  IconButton(
+                    tooltip: widget.store.hideVip ? 'VIP：隐藏' : 'VIP：显示',
+                    onPressed: () => saveUserChange(
+                      context,
+                      () => widget.store.setHideVip(!widget.store.hideVip),
+                    ),
+                    icon: VipIcon(hidden: widget.store.hideVip),
                   ),
-                  icon: VipIcon(hidden: widget.store.hideVip),
-                ),
-            ],
+              ],
+            ),
           ),
-        ),
-        if (_filtersExpanded) _filterWall(),
         if (_showRecommendations)
           Expanded(
             child: GestureDetector(
