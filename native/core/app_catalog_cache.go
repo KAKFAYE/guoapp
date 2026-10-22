@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const nativeCatalogTTL = 15 * time.Minute
+const nativeCatalogTTL = 5 * time.Minute
 
 type nativeCatalogState struct {
 	UpdatedAt time.Time `json:"updatedAt"`

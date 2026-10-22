@@ -226,7 +226,11 @@ class DuanjuApp extends StatelessWidget {
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     theme: AppTheme.light,
     darkTheme: AppTheme.dark,
-    themeMode: AppTheme.mode(store?.themeMode ?? 'system'),
+    themeMode: AppTheme.mode(
+      store?.themeMode ??
+          // Windows 桌面端默认深色主题（红果短剧电脑版风格）。
+          (Platform.isWindows ? 'dark' : 'system'),
+    ),
     builder: (context, child) {
       final mode = store?.displayMode ?? 'auto';
       final tv = mode == 'television' || mode == 'auto' && television;

@@ -1196,12 +1196,28 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (desktop || television) ...[
                   television
                       ? _televisionNavigation(destinations)
-                      : NavigationRail(
+                      : _SideNav(
                           selectedIndex: _tab,
-                          onDestinationSelected: _changeTab,
-                          labelType: NavigationRailLabelType.all,
-                          groupAlignment: -.8,
-                          destinations: destinations,
+                          onSelected: _changeTab,
+                          canDownload: widget.store.canDownload,
+                          onRankings: widget.store.sources.isEmpty
+                              ? null
+                              : _openRankings,
+                          onSettings: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => SettingsScreen(
+                                repository: widget.repository,
+                                store: widget.store,
+                              ),
+                            ),
+                          ),
+                          onUsers: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => ProfilesScreen(store: widget.store),
+                            ),
+                          ),
                         ),
                   const VerticalDivider(width: 1, thickness: 1),
                 ],
@@ -1669,6 +1685,156 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(18, 2, 18, 18),
       itemBuilder: (_, index, node, onFocus) =>
           _catalogTile(items[index], focusNode: node, onFocus: onFocus),
+    );
+  }
+}
+
+/// 桌面端左侧导航栏（红果短剧电脑版风格）。
+class _SideNav extends StatelessWidget {
+  const _SideNav({
+    required this.selectedIndex,
+    required this.onSelected,
+    required this.canDownload,
+    this.onRankings,
+    this.onSettings,
+    this.onUsers,
+  });
+
+  final int selectedIndex;
+  final void Function(int) onSelected;
+  final bool canDownload;
+  final VoidCallback? onRankings;
+  final VoidCallback? onSettings;
+  final VoidCallback? onUsers;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    Widget entry({
+      required IconData icon,
+      required IconData activeIcon,
+      required String label,
+      required bool selected,
+      VoidCallback? onTap,
+    }) {
+      final color = selected ? scheme.primary : scheme.onSurfaceVariant;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        child: Material(
+          color: selected
+              ? scheme.primary.withValues(alpha: .18)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: onTap,
+            child: SizedBox(
+              height: 44,
+              child: Row(
+                children: [
+                  const SizedBox(width: 14),
+                  Icon(selected ? activeIcon : icon, size: 21, color: color),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: 176,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.only(top: 12, bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  entry(
+                    icon: Icons.home_outlined,
+                    activeIcon: Icons.home_rounded,
+                    label: '推荐',
+                    selected: selectedIndex == 0,
+                    onTap: () => onSelected(0),
+                  ),
+                  entry(
+                    icon: Icons.bookmark_border_rounded,
+                    activeIcon: Icons.bookmark_rounded,
+                    label: '收藏',
+                    selected: selectedIndex == 1,
+                    onTap: () => onSelected(1),
+                  ),
+                  if (onRankings != null)
+                    entry(
+                      icon: Icons.leaderboard_outlined,
+                      activeIcon: Icons.leaderboard_rounded,
+                      label: '排行榜',
+                      selected: false,
+                      onTap: onRankings,
+                    ),
+                  entry(
+                    icon: Icons.history_rounded,
+                    activeIcon: Icons.history_rounded,
+                    label: '历史',
+                    selected: selectedIndex == 2,
+                    onTap: () => onSelected(2),
+                  ),
+                  if (canDownload)
+                    entry(
+                      icon: Icons.download_outlined,
+                      activeIcon: Icons.download_rounded,
+                      label: '下载',
+                      selected: selectedIndex == 3,
+                      onTap: () => onSelected(3),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          Divider(height: 1, thickness: 1, color: scheme.outlineVariant),
+          Padding(
+            padding: const EdgeInsets.only(top: 8, bottom: 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                entry(
+                  icon: Icons.favorite_border_rounded,
+                  activeIcon: Icons.favorite_rounded,
+                  label: '用户',
+                  selected: false,
+                  onTap: onUsers,
+                ),
+                entry(
+                  icon: Icons.settings_outlined,
+                  activeIcon: Icons.settings_rounded,
+                  label: '设置',
+                  selected: false,
+                  onTap: onSettings,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
