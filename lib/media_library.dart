@@ -523,6 +523,12 @@ class MediaLibrary extends ChangeNotifier {
         );
         _skipped.remove(job.id);
         await _save();
+        if (automatic) {
+          // 导出成功后清理该集的下载工作数据（分段文件夹），保持下载目录干净。
+          try {
+            await repository.controlDownloads('remove', id: job.id);
+          } catch (_) {}
+        }
         progress = (i + 1) / jobs.length;
         notifyListeners();
       }
