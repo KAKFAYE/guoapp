@@ -65,9 +65,9 @@ func (downloader *Downloader) fetchHongguoAppCatalogCategory(ctx context.Context
 	if pageLimit > 200 {
 		pageLimit = 200
 	}
-	headLimit := min(pageLimit, 3)
+	headLimit := min(pageLimit, 8)
 	if background, _ := ctx.Value(backgroundCatalogKey{}).(bool); !background {
-		pageLimit = min(pageLimit, max(1, 3/len(genres)))
+		pageLimit = min(pageLimit, max(1, 8/len(genres)))
 	}
 	roundLimit := max(pageLimit, headLimit)
 	if update {
