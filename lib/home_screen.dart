@@ -1204,6 +1204,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           onRankings: widget.store.sources.isEmpty
                               ? null
                               : _openRankings,
+                          onNewDramas: widget.store.sources.isEmpty
+                              ? null
+                              : () async {
+                                  await saveUserChange(
+                                    context,
+                                    () => widget.store.setCatalogView(
+                                      widget.store.catalogView.copyWith(
+                                        sort: CatalogSort.date,
+                                      ),
+                                    ),
+                                  );
+                                  if (mounted) _changeTab(0);
+                                },
                           onSettings: () => Navigator.push(
                             context,
                             MaterialPageRoute<void>(
@@ -1385,6 +1398,30 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 常驻搜索框（找剧页风格）。
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: TextField(
+              key: const ValueKey('wall-search'),
+              controller: _search,
+              onChanged: _searchChanged,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: '输入剧名 / 关键词',
+                prefixIcon: const Icon(Icons.search_rounded),
+                suffixIcon: _search.text.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: '清空搜索',
+                        onPressed: () {
+                          _search.clear();
+                          _searchChanged('');
+                        },
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+              ),
+            ),
+          ),
           section(
             '推荐',
             [
@@ -1834,6 +1871,7 @@ class _SideNav extends StatelessWidget {
     required this.onSelected,
     required this.canDownload,
     this.onRankings,
+    this.onNewDramas,
     this.onSettings,
     this.onUsers,
   });
@@ -1842,6 +1880,7 @@ class _SideNav extends StatelessWidget {
   final void Function(int) onSelected;
   final bool canDownload;
   final VoidCallback? onRankings;
+  final VoidCallback? onNewDramas;
   final VoidCallback? onSettings;
   final VoidCallback? onUsers;
 
@@ -1917,10 +1956,18 @@ class _SideNav extends StatelessWidget {
                   entry(
                     icon: Icons.bookmark_border_rounded,
                     activeIcon: Icons.bookmark_rounded,
-                    label: '收藏',
+                    label: '追更/预约',
                     selected: selectedIndex == 1,
                     onTap: () => onSelected(1),
                   ),
+                  if (onNewDramas != null)
+                    entry(
+                      icon: Icons.fiber_new_outlined,
+                      activeIcon: Icons.fiber_new_rounded,
+                      label: '新剧',
+                      selected: false,
+                      onTap: onNewDramas,
+                    ),
                   if (onRankings != null)
                     entry(
                       icon: Icons.leaderboard_outlined,
